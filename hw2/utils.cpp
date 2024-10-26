@@ -593,7 +593,13 @@ bool valid_coords(double alpha, double beta, double gamma) {
     return alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1;
 }
 
-void rasterize_triangle(
+bool in_cube(Vector3d& v_ndc) {
+    return (v_ndc(0) > -1 && v_ndc(0) < 1 
+            && v_ndc(1) > -1 && v_ndc(1) < 1
+            && v_ndc(2) > -1 && v_ndc(2) < 1);
+}
+
+void rasterize_triangle_gouraud(
     Point& p1,
     Point& p2,
     Point& p3,
@@ -609,6 +615,7 @@ void rasterize_triangle(
 
     Input coordinates are ndc coordinates and we have to convert them to screen
     coordinates ourselves.
+
 
     We are still in the assumption here that x and y are like in cartesian, not (column, row)
     like on screen. Because of this, when we draw, we draw img[y][x]
@@ -640,9 +647,10 @@ void rasterize_triangle(
             double beta = std::get<1>(bary);
             double gamma = std::get<2>(bary);
 
-            double point_z = (p1.v * alpha + p2.v * beta + p3.v * gamma).z();
+            Vector3d v_ndc = (p1.v * alpha + p2.v * beta + p3.v * gamma).head<3>();
+            double point_z = v_ndc.z();
 
-            if (valid_coords(alpha, beta, gamma) && point_z < depth_buffer[y][x]) {
+            if (valid_coords(alpha, beta, gamma) && in_cube(v_ndc) && point_z <= depth_buffer[y][x]) {
                 depth_buffer[y][x] = point_z;
                 double r = alpha * c1.r + beta * c2.r + gamma * c3.r;
                 double g = alpha * c1.g + beta * c2.g + gamma * c3.g;
@@ -650,5 +658,5 @@ void rasterize_triangle(
                 img[y][x] = Color(r, g, b);
             }
         }
-}
     }
+}
