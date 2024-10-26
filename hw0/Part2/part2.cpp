@@ -74,7 +74,6 @@ int main(int argc, char** argv) {
            calc_translation_matrix(v, M);
        } else if (type == "r") {
            Vector3d v;
-           Matrix4d R;
            double rx, ry, rz, angle;
            iss >> rx >> ry >> rz >> angle;
            v << rx, ry, rz;

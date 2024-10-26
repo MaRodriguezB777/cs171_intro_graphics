@@ -122,7 +122,8 @@ int main(int argc, char** argv) {
     std::string filename = argv[1];
     std::ifstream file(filename);
     std::string line;
-    std::vector<Object> objects;
+    std::unordered_map<std::string, Object> objects_by_name;
+    std::vector<std::string> object_names;
 
     // define the objects
     while (std::getline(file, line)) {
@@ -135,7 +136,9 @@ int main(int argc, char** argv) {
         std::string file_name;
         iss >> obj_name >> file_name;
         Object obj(obj_name, file_name);
-        objects.push_back(obj);
+        objects_by_name.insert(std::make_pair(obj_name, obj));
+        object_names.push_back(obj_name);
+        // objects.push_back(obj);
     }
 
     // create the copies of the objects
@@ -168,23 +171,33 @@ int main(int argc, char** argv) {
             product = M * product;
         }
 
-        for (auto& obj : objects) {
-            if (obj.name == obj_name) {
-                obj.transforms.push_back(product);
-            }
+        // if obj_name is the map, then add the product to the transforms of the
+        // object
+        if (objects_by_name.find(obj_name) != objects_by_name.end()) {
+            objects_by_name.at(obj_name).transforms.push_back(product);
         }
+
+        // for (auto& obj : objects) {
+        //     if (obj.name == obj_name) {
+        //         obj.transforms.push_back(product);
+        //     }
+        // }
     }
 
     file.close();
 
     // output the transformed objects
-    for (auto& obj : objects) {
-        obj.apply_transforms();
+    for (auto& obj : objects_by_name) {
+        obj.second.apply_transforms();
     }
+    // for (auto& obj : objects) {
+    //     obj.apply_transforms();
+    // }
 
-    for (auto& obj : objects) {
+    for (auto& obj_name : object_names) {
+        Object obj = objects_by_name.at(obj_name);
         for (int i = 0; i < obj.transforms.size(); i++) {
-            std::cout << obj.name << "_copy" << (i + 1) << std::endl;
+            std::cout << obj_name << "_copy" << (i + 1) << std::endl;
             std::vector<Vector4d> t_vertices = obj.transformed_vertices[i];
             for (auto& v : t_vertices) {
                 std::cout << v(0) << ' ' << v(1) << ' ' << v(2) << std::endl;
@@ -192,6 +205,16 @@ int main(int argc, char** argv) {
             std::cout << std::endl;
         }
     }
+    // for (auto& obj : objects) {
+    //     for (int i = 0; i < obj.transforms.size(); i++) {
+    //         std::cout << obj.name << "_copy" << (i + 1) << std::endl;
+    //         std::vector<Vector4d> t_vertices = obj.transformed_vertices[i];
+    //         for (auto& v : t_vertices) {
+    //             std::cout << v(0) << ' ' << v(1) << ' ' << v(2) << std::endl;
+    //         }
+    //         std::cout << std::endl;
+    //     }
+    // }
 
     return 0;
 }

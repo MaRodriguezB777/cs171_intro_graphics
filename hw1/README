@@ -1,0 +1,5 @@
+To compile just run `make`
+
+To run the program you can do `./wireframe [/dir/to/scene_file.txt] [xres] [yres]`
+and you can put those into a ppm file using:
+`./wireframe [/dir/to/scene_file.txt] [xres] [yres] > [scene.ppm]`
