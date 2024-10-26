@@ -115,69 +115,6 @@ Object::Object(std::string name, std::string filename) : name(name), filename(fi
         file.close();
 }
 
-// void Object::apply_geometric_transforms() {
-//     for (auto& T : transform_matrices) {
-//         std::vector<Vector4d> new_vertices;
-//         for (auto& v : vertices) {
-//             new_vertices.push_back(T * v);
-//         }
-//         transformed_vertices.push_back(new_vertices);
-//     }
-// }
-
-std::vector<std::vector<Vector4d*>> Object::get_cartesian_ndc(Matrix4d& S, Matrix4d& P) {
-    Matrix4d T = P * S; // Converts from world coordinates to normalized device coordinates
-       
-    std::vector<std::vector<Vector4d*>> result;
-    // for (auto& vset : transformed_vertices) {
-    //     std::vector<Vector4d*> new_vertices;
-    //     for (auto& v : vset) {
-    //         Vector4d* new_v = new Vector4d(T * v);
-    //         *new_v /= (*new_v)(3);
-    //         // std::cout << "This is the homogenous ndc: " << std::endl;
-    //         // std::cout << (*new_v)(0) << " " << (*new_v)(1) << " " << (*new_v)(2) << " " << (*new_v)(3) << std::endl;
-            
-    //         // Removed because it messes up the faces mapping
-    //         if ((*new_v)(0) < -1 || (*new_v)(0) > 1 || (*new_v)(1) < -1 || (*new_v)(1) > 1) {
-    //             new_vertices.push_back(nullptr);
-    //             delete new_v;
-    //         } else {
-    //             new_vertices.push_back(new_v);
-    //         }
-    //     }
-    //     result.push_back(new_vertices);
-    // }
-
-    return result;
-}
-
-void Object::apply_transforms_and_cartesian_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix) {
-    // Part 3
-    std::vector<std::vector<Vector4d*>> trans_objs = get_cartesian_ndc(space_matrix, pers_matrix);
-
-    // for (auto& vset_ptr : trans_objs) {
-    //     cartesian_ndc.push_back(vset_ptr);
-    // }
-}
-
-void Object::apply_screen_mapping(int xres, int yres) {
-    // Part 4
-    // for (auto& vset_ptr : cartesian_ndc) {
-    //     std::vector<Vector2d*> new_vset;
-    //     for (auto& v_ptr : vset_ptr) {
-    //         if (v_ptr == nullptr) {
-    //             new_vset.push_back(nullptr);
-    //             continue;
-    //         }
-    //         Vector4d& v = *v_ptr;
-    //         double new_x = (xres - 1) * (1 - v(0)) / 2;
-    //         double new_y = (yres - 1) * (1 + v(1)) / 2;
-    //         new_vset.push_back(new Vector2d(new_x, new_y));
-    //     }
-    //     screen_coords.push_back(new_vset);
-    // }
-}
-
 /*
 ###############################
 Camera struct Methods
@@ -236,10 +173,10 @@ void Scene::calc_pers_matrix() {
     double t = camera.t;
     double b = camera.b;
     Matrix4d orig_matrix;
-    orig_matrix << 2*n/(r-l), 0, (r+l)/(r-l), 0,
-                    0, 2*n/(t-b), (t+b)/(t-b), 0,
-                    0, 0, -(f+n)/(f-n), -2*f*n/(f-n),
-                    0, 0, -1, 0;
+    orig_matrix << 2*n/(r-l), 0,         (r+l)/(r-l),  0,
+                   0,         2*n/(t-b), (t+b)/(t-b),  0,
+                   0,         0,         -(f+n)/(f-n), -2*f*n/(f-n),
+                   0,         0,         -1,           0;
 
     pers_matrix = orig_matrix;
 }
@@ -258,6 +195,7 @@ void calc_translation_matrix(Vector3d& v, Matrix4d& T) {
 
 void calc_rotation_matrix(Vector3d& u, double angle, Matrix4d& R) {
     // assert that u is a unit vector
+    u.normalize();
     assert(u.norm() - 1 < 1e-6);
 
     // calculate the rotation matrix
@@ -282,97 +220,6 @@ void calc_scaling_matrix(Vector3d& v, Matrix4d& S) {
          0, v(1), 0, 0,
          0, 0, v(2), 0,
          0, 0, 0, 1;
-}
-
-void draw_line(int x0, int y0, int x1, int y1, std::vector<std::vector<bool>>& img) {
-    /* 
-    Generalized Bresenham Line Algorithm explanation:
-
-    All lines in the plane can be categorized by two parameters:
-    1. Whether the slope is positive or negative
-    2. Whether the line is steep or not (|m| > 1 or |m| < 1)
-    3. Whether we are drawing left to right or right to left
-
-    For the drawing direction, we can choose one direction and WLOG
-    we choose drawing left to right. This generalizes any lines going
-    into the 3rd through 6th quadrant.
-
-    Now we handle the remaining 4 quadrants:
-
-    Quadrant 1. Provided in notes
-    Quadrant 8. This case is similar to Quadrant 1, except that error
-    accumulates downward, therefore we have to correct it by adding dx. Also,
-    we need to switch the sign of the y increment and reverse the inequality
-    since dy is now negative.
-    Quadrant 2. Here, because we have a steep, increasing line, we can flip the
-    x and y and treat this the same as quadrant 1.
-    Quadrant 7. Here, similarly to Quadrant 2, we flip the x and y and treat
-    this the same as quadrant 8.
-    */
-    // draw from left to right
-    if (x0 > x1) {
-        std::swap(x0, x1);
-        std::swap(y0, y1);
-    }
-
-    int dx = x1 - x0;
-    int dy = y1 - y0;
-
-    bool steep = abs(dy) > abs(dx);
-    int err = 0;
-
-    if (!steep) { // iterate over x
-        int y = y0;
-        if (dy >= 0) { // (Quadrant 1) drawing upward
-            for (int x = x0; x <= x1; x++) {
-                color_pixel(x, y, img);
-                if (2 * (err + dy) < dx) {
-                    err += dy;
-                } else {
-                    err += dy - dx;
-                    y++;
-                }
-            }
-        } else { // (Quadrant 8) drawing downward
-            for (int x = x0; x <= x1; x++) {
-                color_pixel(x, y, img);
-                if (2 * (err + dy) > dx) {
-                    err += dy;
-                } else {
-                    err += dy + dx;
-                    y--;
-                }
-            }
-        }
-    } else { // iterate over y
-        int x = x0;
-        if (dy >= 0) { // (Quadrant 2) drawing upward
-            for (int y = y0; y <= y1; y++) {
-                color_pixel(x, y, img);
-                if (2 * (err + dx) < dy) {
-                    err += dx;
-                } else {
-                    err += dx - dy;
-                    x++;
-                }
-            }
-        } else { // (Quadrant 7) drawing downward
-            for (int y = y0; y >= y1; y--) {
-                color_pixel(x, y, img);
-                if (2 * (err + dx) > dy) {
-                    err -= dx;
-                } else {
-                    err += -dx - dy;
-                    x++;
-                }
-            }
-        }
-    }
-}
-
-void color_pixel(int x, int y, std::vector<std::vector<bool>>& img) {
-    if (x < 0 || x >= img[0].size() || y < 0 || y >= img.size()) return;
-    img[y][x] = true;
 }
 
 Camera read_camera_section(std::ifstream& file) {
@@ -476,6 +323,7 @@ Shape create_shape(std::string name, std::string filename, std::ifstream& file, 
         }
     }
 
+    surface_norms_product = surface_norms_product.inverse().transpose();
     std::vector<Vector4d> world_vertices;
     std::vector<Vector3d> normals;
     if (PRINT_UTILS) {
@@ -689,10 +537,9 @@ void rasterize_triangle_phong(
     std::vector<std::vector<double>>& depth_buffer) {
     /*
     Takes in world coordinates
-
     Implements backface culling
-
     */
+
     Point p1_ndc = transform_to_ndc(space_matrix, pers_matrix, p1.v);
     Point p2_ndc = transform_to_ndc(space_matrix, pers_matrix, p2.v);
     Point p3_ndc = transform_to_ndc(space_matrix, pers_matrix, p3.v);

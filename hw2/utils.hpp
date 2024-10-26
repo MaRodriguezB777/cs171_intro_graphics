@@ -1,7 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <Eigen/Dense>
+#include "Eigen/Dense"
 
 using namespace Eigen;
 
@@ -66,17 +66,8 @@ struct Object {
     std::vector<Vector4d> vertices; // 0-indexed
     std::vector<Vector3d> surface_normals; // not normalized
     std::vector<Face> faces;
-    // std::vector<Matrix4d> transform_matrices;
-    // std::vector<Shape> shapes; // This will replace the transformed_vertices
-    // std::vector<std::vector<Vector4d> > transformed_vertices;
-    // std::vector<std::vector<Vector4d*> > cartesian_ndc;
-    // std::vector<std::vector<Vector2d*> > screen_coords;
 
     Object(std::string name, std::string filename);
-    // void apply_geometric_transforms();
-    std::vector<std::vector<Vector4d*>> get_cartesian_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix);
-    void apply_transforms_and_cartesian_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix);
-    void apply_screen_mapping(int xres, int yres);
 };
 
 struct Camera {
@@ -160,4 +151,5 @@ void rasterize_triangle_phong(
 
 void fill_grid(Scene scene, int xres, int yres, std::vector<std::vector<Color>>& img, ShadingType shading_type);
 void print_ppm(std::vector<std::vector<Color>>& img, int xres, int yres, int color_size);
+
 #endif // UTILS_HPP

@@ -80,6 +80,9 @@ Scene read_scene_file(std::string filename) {
     std::ifstream file(filename);
     std::string line;
     while(std::getline(file, line)) {
+        if (line.empty()) {
+            continue;
+        }
         std::istringstream iss(line);
         std::string type;
         iss >> type;
@@ -96,7 +99,6 @@ Scene read_scene_file(std::string filename) {
             double k;
             iss >> k;
             lights.push_back(Light(x, y, z, r, g, b, k));
-            std::getline(file, line); // read empty line
         } else if (type == "objects:") {
             read_objects_section(file, objects);
         } else if (objects.find(type) != objects.end()) {
@@ -136,7 +138,6 @@ int main(int argc, char** argv) {
     // - Create function to transform from matrix world to NDC
     // Part 3 [Completed]
     // - Transform surface normals to normal transformations (and normalize)
-    Scene scene = read_scene_file(argv[1]);
 
     // Part 4 [Completed]
     // Implement the lighting model including attenuation
@@ -151,10 +152,10 @@ int main(int argc, char** argv) {
 
     // Part 7 [Completed]
     // Implement full Phong shading algorithm
+    Scene scene = read_scene_file(argv[1]);
 
-    // Part 8
+    // Part 8 [Completed]
     // Output pixel grid to standard output as a .ppm image file
-
     std::vector<std::vector<Color>> img(yres, std::vector<Color>(xres, Color(0, 0, 0)));
     fill_grid(scene, xres, yres, img, shading_type);
     print_ppm(img, xres, yres, 255);

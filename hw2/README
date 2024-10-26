@@ -1,0 +1,8 @@
+To run, first build using `make clean && make` then run the following command
+with your desired file, resolution, and shading mode (0 for Gouraud, 1 for
+Phong) and pipe the output to put into a ppm file as below:
+
+`./shaded [scene_desc.txt] [xres] [yres] [mode] > [scene.ppm]`
+
+I've also made a bash script `generate_images.sh` that will compile the program
+and create images in both shading methods for each scene file in the `data/` folder.
