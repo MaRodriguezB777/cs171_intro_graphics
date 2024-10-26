@@ -576,36 +576,79 @@ std::tuple<double, double, double> calc_barycentric_coords(
     return std::make_tuple(alpha, beta, gamma);
 }
 
-void rasterize_triangle(
-    Vector2d& p1,
-    Vector2d& p2,
-    Vector2d& p3,
-    Color c1,
-    Color c2,
-    Color c3,
-    std::vector<std::vector<Color>>& img) {
+Vector2d map_screen(Vector4d& v,int xres, int yres) {
     /*
-    Note that the input coordinates are in screen coordinates but we are still
-    in the assumption here that x and y are like in cartesian, not (column, row)
+    This will make the points be like how they should appear on the screen,
+    this means that (0,0) corresponds to the top left corner. However, when
+    inputting to an image array, need to flip x and y coords since there the
+    first idx represents vertical and second idx represents horizontal.
+    */
+    double new_x = (xres - 1) * (1 - v(0)) / 2;
+    double new_y = (yres - 1) * (1 + v(1)) / 2;
+
+    return Vector2d(new_x, new_y);
+}
+
+bool valid_coords(double alpha, double beta, double gamma) {
+    return alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1;
+}
+
+void rasterize_triangle(
+    Point& p1,
+    Point& p2,
+    Point& p3,
+    int xres,
+    int yres,
+    std::vector<std::vector<Color>>& img,
+    std::vector<std::vector<bool>>& depth_buffer) {
+    /*
+    Implements depth buffering, note that `depth_buffer` should be
+    initialized with infinity values.
+
+    Implementing backface culling which will only draw triangles that are facing the camera.
+
+    Input coordinates are ndc coordinates and we have to convert them to screen
+    coordinates ourselves.
+
+    We are still in the assumption here that x and y are like in cartesian, not (column, row)
     like on screen. Because of this, when we draw, we draw img[y][x]
     */
-    int min_x = std::min(p1(0), std::min(p2(0), p3(0)));
-    int max_x = std::max(p1(0), std::max(p2(0), p3(0)));
-    int min_y = std::min(p1(1), std::min(p2(1), p3(1)));
-    int max_y = std::max(p1(1), std::max(p2(1), p3(1)));
+    Vector3d cross = (p3.v.head<3>() - p2.v.head<3>()).cross(p1.v.head<3>() - p2.v.head<3>());
+
+    // if triangle is facing away, backface culling stops it from being rendered.
+    if (cross(2) < 0) {
+        return;
+    }
+
+    Vector2d p1_screen = map_screen(p1.v, xres, yres);
+    Vector2d p2_screen = map_screen(p2.v, xres, yres);
+    Vector2d p3_screen = map_screen(p3.v, xres, yres);
+    Color c1 = p1.c;
+    Color c2 = p2.c;
+    Color c3 = p3.c;
+
+    int min_x = std::min(p1_screen(0), std::min(p2_screen(0), p3_screen(0)));
+    int max_x = std::max(p1_screen(0), std::max(p2_screen(0), p3_screen(0)));
+    int min_y = std::min(p1_screen(1), std::min(p2_screen(1), p3_screen(1)));
+    int max_y = std::max(p1_screen(1), std::max(p2_screen(1), p3_screen(1)));
 
     for (int x = min_x; x <= max_x; x++) {
         for (int y = min_y; y <= max_y; y++) {
-            std::tuple<double, double, double> bary = calc_barycentric_coords(p1, p2, p3, x, y);
+            std::tuple<double, double, double> bary = 
+                calc_barycentric_coords(p1_screen, p2_screen, p3_screen, x, y);
             double alpha = std::get<0>(bary);
             double beta = std::get<1>(bary);
             double gamma = std::get<2>(bary);
-            if (alpha >= 0 && alpha <= 1 && beta >= 0 && beta <= 1 && gamma >= 0 && gamma <= 1) {
+
+            double point_z = (p1.v * alpha + p2.v * beta + p3.v * gamma).z();
+
+            if (valid_coords(alpha, beta, gamma) && point_z < depth_buffer[y][x]) {
+                depth_buffer[y][x] = point_z;
                 double r = alpha * c1.r + beta * c2.r + gamma * c3.r;
                 double g = alpha * c1.g + beta * c2.g + gamma * c3.g;
                 double b = alpha * c1.b + beta * c2.b + gamma * c3.b;
                 img[y][x] = Color(r, g, b);
             }
         }
-    }
 }
+    }
