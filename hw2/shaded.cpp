@@ -57,7 +57,18 @@ void print_part_1(Scene& scene, std::unordered_map<std::string, Object> objects)
         for (auto& v : shape.normals) {
             std::cout << v.transpose() << std::endl;
         }
+        std::cout << "NDC vertices: " << std::endl;
+        for (auto& p : shape.points) {
+            Vector4d v = transform_to_ndc(scene.space_matrix, scene.pers_matrix, p.v);
+            std::cout << v.transpose() << std::endl;
+        }
     }
+
+    std::cout << "Space matrix: " << std::endl;
+    std::cout << scene.space_matrix << std::endl;
+
+    std::cout << "Perspective matrix: " << std::endl;
+    std::cout << scene.pers_matrix << std::endl;
 }
 
 Scene read_scene_file(std::string filename) {
@@ -113,6 +124,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    int xres = std::stoi(argv[2]);
+    int yres = std::stoi(argv[3]);
+    ShadingType shading_type = std::stoi(argv[4]) == 0 ? ShadingType::GOURAUD : ShadingType::PHONG;
+    if (PRINT_MAIN) {
+        std::cout << "Shading Type:" << (std::stoi(argv[4]) == 0 ? "GOURAUD" : "PHONG") << std::endl;
+    }
     // Part 1 (Parse the scene file) [Completed]
     // Part 2 [Completed]
     // - Apply geometric transformations to each object copy
@@ -124,19 +141,23 @@ int main(int argc, char** argv) {
     // Part 4 [Completed]
     // Implement the lighting model including attenuation
 
-    // Part 5
+    // Part 5 [Completed]
     // Implement the Rasterizing colored triangles algorithm
     // using interpolation via barycentric coordinates, 
     // backface culling, and depth buffering
 
-    // Part 6
+    // Part 6 [Completed]
     // Implement full Gourand shading algorithm
 
-    // Part 7
+    // Part 7 [Completed]
     // Implement full Phong shading algorithm
 
     // Part 8
     // Output pixel grid to standard output as a .ppm image file
+
+    std::vector<std::vector<Color>> img(yres, std::vector<Color>(xres, Color(0, 0, 0)));
+    fill_grid(scene, xres, yres, img, shading_type);
+    print_ppm(img, xres, yres, 255);
 
     return 0;
 }

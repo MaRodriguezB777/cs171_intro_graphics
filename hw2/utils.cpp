@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-bool PRINT_UTILS = true;
+bool PRINT_UTILS = false;
 /*
 ############################
 Color, Light, Shape, Point, & Face struct Methods
@@ -229,8 +229,8 @@ void Scene::calc_space_transform_matrix() {
 }
 
 void Scene::calc_pers_matrix() {
-    double n = -camera.n;
-    double f = -camera.f;
+    double n = camera.n;
+    double f = camera.f;
     double r = camera.r;
     double l = camera.l;
     double t = camera.t;
@@ -258,7 +258,7 @@ void calc_translation_matrix(Vector3d& v, Matrix4d& T) {
 
 void calc_rotation_matrix(Vector3d& u, double angle, Matrix4d& R) {
     // assert that u is a unit vector
-    assert(u.norm() == 1);
+    assert(u.norm() - 1 < 1e-6);
 
     // calculate the rotation matrix
     double ux2 = u(0) * u(0);
@@ -506,13 +506,13 @@ Shape create_shape(std::string name, std::string filename, std::ifstream& file, 
     return Shape(name, filename, obj.faces, world_vertices, normals, ambient, diffuse, specular, shininess);
 }
 
-void transform_to_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix, Vector4d& v) {
+Vector4d transform_to_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix, Vector4d v) {
     Matrix4d T = pers_matrix * space_matrix; // Converts from world coordinates to normalized device coordinates
        
     Vector4d new_v = T * v;
     new_v /= new_v(3); // divide by w_ndc
     
-    v = new_v;
+    return new_v;
 }
 
 // Part 4
@@ -525,7 +525,11 @@ void calc_lighting_model(
     Vector3d& n,
     std::vector<Light>& lights,
     Vector3d& cam_position) {
-        assert(n.norm() == 1.0);
+        // n.normalize();
+        if (PRINT_UTILS) {
+            std::cout << n.transpose() << ", norm: " << n.norm() << ", diff: " << std::abs(n.norm() - 1.0) <<  ", bool: " << (std::abs(n.norm() - 1.0) < 1e-6) << std::endl;
+        }
+        assert(std::abs(n.norm() - 1.0) < 1e-6);
         Vector3d ambient = Vector3d(ambient_c.r, ambient_c.g, ambient_c.b);
         Vector3d diffuse = Vector3d(diffuse_c.r, diffuse_c.g, diffuse_c.b);
         Vector3d specular = Vector3d(specular_c.r, specular_c.g, specular_c.b);
@@ -583,8 +587,8 @@ Vector2d map_screen(Vector4d& v,int xres, int yres) {
     inputting to an image array, need to flip x and y coords since there the
     first idx represents vertical and second idx represents horizontal.
     */
-    double new_x = (xres - 1) * (1 - v(0)) / 2;
-    double new_y = (yres - 1) * (1 + v(1)) / 2;
+    double new_x = (xres - 1) * (1 + v(0)) / 2;
+    double new_y = (yres - 1) * (1 - v(1)) / 2;
 
     return Vector2d(new_x, new_y);
 }
@@ -600,39 +604,45 @@ bool in_cube(Vector3d& v_ndc) {
 }
 
 void rasterize_triangle_gouraud(
-    Point& p1,
-    Point& p2,
-    Point& p3,
+    Point& p1_ndc,
+    Point& p2_ndc,
+    Point& p3_ndc,
     int xres,
     int yres,
     std::vector<std::vector<Color>>& img,
-    std::vector<std::vector<bool>>& depth_buffer) {
+    std::vector<std::vector<double>>& depth_buffer) {
     /*
     Implements depth buffering, note that `depth_buffer` should be
     initialized with infinity values.
 
-    Implementing backface culling which will only draw triangles that are facing the camera.
+    Implements backface culling which will only draw triangles that are facing the camera.
 
     Input coordinates are ndc coordinates and we have to convert them to screen
     coordinates ourselves.
 
-
     We are still in the assumption here that x and y are like in cartesian, not (column, row)
     like on screen. Because of this, when we draw, we draw img[y][x]
     */
-    Vector3d cross = (p3.v.head<3>() - p2.v.head<3>()).cross(p1.v.head<3>() - p2.v.head<3>());
+    Vector3d cross = (p3_ndc.v.head<3>() - p2_ndc.v.head<3>()).cross(p1_ndc.v.head<3>() - p2_ndc.v.head<3>());
 
     // if triangle is facing away, backface culling stops it from being rendered.
     if (cross(2) < 0) {
         return;
     }
 
-    Vector2d p1_screen = map_screen(p1.v, xres, yres);
-    Vector2d p2_screen = map_screen(p2.v, xres, yres);
-    Vector2d p3_screen = map_screen(p3.v, xres, yres);
-    Color c1 = p1.c;
-    Color c2 = p2.c;
-    Color c3 = p3.c;
+    Vector2d p1_screen = map_screen(p1_ndc.v, xres, yres);
+    Vector2d p2_screen = map_screen(p2_ndc.v, xres, yres);
+    Vector2d p3_screen = map_screen(p3_ndc.v, xres, yres);
+    if (PRINT_UTILS) {
+        std::cout << "These are the screen vectors:" << std::endl;
+        std::cout << p1_screen.transpose() << std::endl;
+        std::cout << p2_screen.transpose() << std::endl;
+        std::cout << p3_screen.transpose() << std::endl;
+    }
+    
+    Color c1 = p1_ndc.c;
+    Color c2 = p2_ndc.c;
+    Color c3 = p3_ndc.c;
 
     int min_x = std::min(p1_screen(0), std::min(p2_screen(0), p3_screen(0)));
     int max_x = std::max(p1_screen(0), std::max(p2_screen(0), p3_screen(0)));
@@ -647,7 +657,7 @@ void rasterize_triangle_gouraud(
             double beta = std::get<1>(bary);
             double gamma = std::get<2>(bary);
 
-            Vector3d v_ndc = (p1.v * alpha + p2.v * beta + p3.v * gamma).head<3>();
+            Vector3d v_ndc = (p1_ndc.v * alpha + p2_ndc.v * beta + p3_ndc.v * gamma).head<3>();
             double point_z = v_ndc.z();
 
             if (valid_coords(alpha, beta, gamma) && in_cube(v_ndc) && point_z <= depth_buffer[y][x]) {
@@ -657,6 +667,173 @@ void rasterize_triangle_gouraud(
                 double b = alpha * c1.b + beta * c2.b + gamma * c3.b;
                 img[y][x] = Color(r, g, b);
             }
+        }
+    }
+}
+
+void rasterize_triangle_phong(
+    Point& p1,
+    Point& p2,
+    Point& p3,
+    Vector3d& n1,
+    Vector3d& n2,
+    Vector3d& n3,
+    Shape& shape,
+    Matrix4d& pers_matrix,
+    Matrix4d& space_matrix,
+    std::vector<Light>& lights,
+    Vector3d& cam_pos,
+    int xres,
+    int yres,
+    std::vector<std::vector<Color>>& img,
+    std::vector<std::vector<double>>& depth_buffer) {
+    /*
+    Takes in world coordinates
+
+    Implements backface culling
+
+    */
+    Point p1_ndc = transform_to_ndc(space_matrix, pers_matrix, p1.v);
+    Point p2_ndc = transform_to_ndc(space_matrix, pers_matrix, p2.v);
+    Point p3_ndc = transform_to_ndc(space_matrix, pers_matrix, p3.v);
+
+    Vector3d cross = (p3_ndc.v.head<3>() - p2_ndc.v.head<3>()).cross(p1_ndc.v.head<3>() - p2_ndc.v.head<3>());
+
+    // if triangle is facing away, backface culling stops it from being rendered.
+    if (cross(2) < 0) {
+        return;
+    }
+
+    Vector2d p1_screen = map_screen(p1_ndc.v, xres, yres);
+    Vector2d p2_screen = map_screen(p2_ndc.v, xres, yres);
+    Vector2d p3_screen = map_screen(p3_ndc.v, xres, yres);
+    Color c1 = p1_ndc.c;
+    Color c2 = p2_ndc.c;
+    Color c3 = p3_ndc.c;
+
+    int min_x = std::min(p1_screen(0), std::min(p2_screen(0), p3_screen(0)));
+    int max_x = std::max(p1_screen(0), std::max(p2_screen(0), p3_screen(0)));
+    int min_y = std::min(p1_screen(1), std::min(p2_screen(1), p3_screen(1)));
+    int max_y = std::max(p1_screen(1), std::max(p2_screen(1), p3_screen(1)));
+
+    for (int x = min_x; x <= max_x; x++) {
+        for (int y = min_y; y <= max_y; y++) {
+            std::tuple<double, double, double> bary = 
+                calc_barycentric_coords(p1_screen, p2_screen, p3_screen, x, y);
+            double alpha = std::get<0>(bary);
+            double beta = std::get<1>(bary);
+            double gamma = std::get<2>(bary);
+
+            Vector3d v_ndc = (p1_ndc.v * alpha + p2_ndc.v * beta + p3_ndc.v * gamma).head<3>();
+            double point_z = v_ndc.z();
+
+            if (valid_coords(alpha, beta, gamma) && in_cube(v_ndc) && point_z <= depth_buffer[y][x]) {
+                depth_buffer[y][x] = point_z;
+                Vector3d n = (alpha * n1 + beta * n2 + gamma * n3).normalized();
+                Vector4d v = p1.v * alpha + p2.v * beta + p3.v * gamma;
+                Point p(v);
+                calc_lighting_model(
+                    shape.ambient,
+                    shape.diffuse,
+                    shape.specular,
+                    shape.shininess,
+                    p,
+                    n,
+                    lights,
+                    cam_pos);
+
+                img[y][x] = p.c;
+            }
+        }
+    }
+}
+
+void fill_grid(Scene scene, int xres, int yres, std::vector<std::vector<Color>>& img, ShadingType shading_type) {
+    std::vector<std::vector<double>> depth_buffer(yres, std::vector<double>(xres, std::numeric_limits<double>::max()));
+    for (auto& sh : scene.shapes) {
+        for (auto& f : sh.faces) {
+            Point p1 = sh.points[f.v1];
+            Point p2 = sh.points[f.v2];
+            Point p3 = sh.points[f.v3];
+            Vector3d n1 = sh.normals[f.n1];
+            Vector3d n2 = sh.normals[f.n2];
+            Vector3d n3 = sh.normals[f.n3];
+            
+            if (shading_type == GOURAUD) {
+                Point p1_ndc = transform_to_ndc(scene.space_matrix, scene.pers_matrix, p1.v);
+                Point p2_ndc = transform_to_ndc(scene.space_matrix, scene.pers_matrix, p2.v);
+                Point p3_ndc = transform_to_ndc(scene.space_matrix, scene.pers_matrix, p3.v);
+
+                calc_lighting_model(
+                    sh.ambient,
+                    sh.diffuse,
+                    sh.specular,
+                    sh.shininess,
+                    p1,
+                    n1,
+                    scene.lights,
+                    scene.camera.position);
+                calc_lighting_model(
+                    sh.ambient,
+                    sh.diffuse,
+                    sh.specular,
+                    sh.shininess,
+                    p2,
+                    n2,
+                    scene.lights,
+                    scene.camera.position);
+                calc_lighting_model(
+                    sh.ambient,
+                    sh.diffuse,
+                    sh.specular,
+                    sh.shininess,
+                    p3,
+                    n3,
+                    scene.lights,
+                    scene.camera.position);
+
+                p1_ndc.c = p1.c;
+                p2_ndc.c = p2.c;
+                p3_ndc.c = p3.c;
+
+                rasterize_triangle_gouraud(p1_ndc, p2_ndc, p3_ndc, xres, yres, img, depth_buffer);
+            }
+            else if (shading_type == PHONG) {
+                rasterize_triangle_phong(
+                    p1,
+                    p2,
+                    p3,
+                    n1,
+                    n2,
+                    n3,
+                    sh,
+                    scene.pers_matrix,
+                    scene.space_matrix,
+                    scene.lights,
+                    scene.camera.position,
+                    xres,
+                    yres,
+                    img,
+                    depth_buffer);
+            }
+        }
+    }
+}
+
+void print_ppm(std::vector<std::vector<Color>>& img, int xres, int yres, int color_size) {
+    std::cout << "P3" << std::endl;
+    std::cout << xres << " " << yres << std::endl;
+    std::cout << color_size << std::endl;
+
+    int row_res = img.size();
+    int col_res = img[0].size();
+
+    for (int i = 0; i < row_res; i++) {
+        for (int j = 0; j < col_res; j++) {
+            int r = int(img[i][j].r * color_size);
+            int g = int(img[i][j].g * color_size);
+            int b = int(img[i][j].b * color_size);
+            std::cout << r << " " << g << " " << b << " " << std::endl;
         }
     }
 }

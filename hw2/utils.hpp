@@ -5,6 +5,11 @@
 
 using namespace Eigen;
 
+enum ShadingType {
+    GOURAUD,
+    PHONG
+};
+
 struct Face {
     int v1, v2, v3; // 0-indexed
     int n1, n2, n3; // 0-indexed
@@ -30,6 +35,7 @@ struct Point {
     Color c;
 
     Point(Vector4d position);
+    Point() {}
 };
 
 struct Shape {
@@ -117,7 +123,7 @@ void color_pixel(int x, int y, std::vector<std::vector<bool>>& img);
 Camera read_camera_section(std::ifstream& file);
 void read_objects_section(std::ifstream& file, std::unordered_map<std::string, Object>& objects);
 Shape create_shape(std::string name, std::string filename,std::ifstream& file, Object& obj);
-void transform_to_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix);
+Vector4d transform_to_ndc(Matrix4d& space_matrix, Matrix4d& pers_matrix, Vector4d v);
 void calc_lighting_model(
     Color ambient_c,
     Color diffuse_c,
@@ -127,6 +133,31 @@ void calc_lighting_model(
     Vector3d& n,
     std::vector<Light>& lights,
     Vector3d& cam_position);
-void rasterize_triangle(Vector3d& p1, Vector3d& p2, Vector3d& p3, std::vector<std::vector<bool>>& img);
+void rasterize_triangle_gouraud(
+    Point& p1,
+    Point& p2,
+    Point& p3,
+    int xres,
+    int yres,
+    std::vector<std::vector<Color>>& img,
+    std::vector<std::vector<double>>& depth_buffer);
+void rasterize_triangle_phong(
+    Point& p1,
+    Point& p2,
+    Point& p3,
+    Vector3d& n1,
+    Vector3d& n2,
+    Vector3d& n3,
+    Shape& shape,
+    Matrix4d& pers_matrix,
+    Matrix4d& space_matrix,
+    std::vector<Light>& lights,
+    Vector3d& cam_position,
+    int xres,
+    int yres,
+    std::vector<std::vector<Color>>& img,
+    std::vector<std::vector<double>>& depth_buffer);
 
+void fill_grid(Scene scene, int xres, int yres, std::vector<std::vector<Color>>& img, ShadingType shading_type);
+void print_ppm(std::vector<std::vector<Color>>& img, int xres, int yres, int color_size);
 #endif // UTILS_HPP
