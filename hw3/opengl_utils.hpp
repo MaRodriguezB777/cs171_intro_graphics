@@ -11,6 +11,8 @@ void init_lights();
 void set_lights();
 void draw_objects();
 void create_objects_from_scene();
+void mouse_pressed(int button, int state, int x, int y);
+void mouse_moved(int x, int y);
 
 struct Triple {
     float x;

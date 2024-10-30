@@ -260,7 +260,7 @@ vector<Object> objects;
  * 'keyPressed' functions for the details.
  */
 
-int mouse_x, mouse_y;
+int start_mouse_x, start_mouse_y;
 float mouse_scale_x, mouse_scale_y;
 
 const float step_size = 0.2;
@@ -1018,8 +1018,8 @@ void mouse_pressed(int button, int state, int x, int y)
     {
         /* Store the mouse position in our global variables.
          */
-        mouse_x = x;
-        mouse_y = y;
+        start_mouse_x = x;
+        start_mouse_y = y;
         
         /* Since the mouse is being pressed down, we set our 'is_pressed"
          * boolean indicator to true.
@@ -1079,7 +1079,7 @@ void mouse_moved(int x, int y)
          * camera angle. 'x_view_angle' is used in the camera rotations specified
          * in the 'display' function.
          */
-        x_view_angle += ((float) x - (float) mouse_x) * mouse_scale_x * x_view_step;
+        x_view_angle += ((float) x - (float) start_mouse_x) * mouse_scale_x * x_view_step;
         
         /* We do basically the same process as above to compute the vertical change
          * in camera angle. The only real difference is that we want to keep the
@@ -1090,7 +1090,7 @@ void mouse_moved(int x, int y)
          * change between -90 and 90 degrees.
          */
         float temp_y_view_angle = y_view_angle +
-                                  ((float) y - (float) mouse_y) * mouse_scale_y * y_view_step;
+                                  ((float) y - (float) start_mouse_y) * mouse_scale_y * y_view_step;
         y_view_angle = (temp_y_view_angle > 90 || temp_y_view_angle < -90) ?
                        y_view_angle : temp_y_view_angle;
         
@@ -1099,8 +1099,8 @@ void mouse_moved(int x, int y)
          * next call to the 'mouse_moved' function will be from this current mouse
          * position.
          */
-        mouse_x = x;
-        mouse_y = y;
+        start_mouse_x = x;
+        start_mouse_y = y;
         
         /* Tell OpenGL that it needs to re-render our scene with the new camera
          * angles.

@@ -1,19 +1,35 @@
 #include <GL/glew.h>
 #include <GLUT/glut.h>
 #include <vector>
+#include <iostream>
 
 #include "utils.hpp"
 #include "opengl_utils.hpp"
+#include "arcball_utils.hpp"
 
 Scene scene;
 std::vector<OpenGL_Shape> opengl_shapes;
 bool wireframe_mode = false;
+
+// Mouse and keyboard Variables
+int start_mouse_x, start_mouse_y;
+float mouse_scale_x, mouse_scale_y;
+const float step_size = 0.2;
+const float x_view_step = 90.0, y_view_step = 90.0;
+float x_view_angle = 0, y_view_angle = 0;
+bool is_pressed = false;
+
+MyQuaternion last_rotation, current_rotation;
 
 void set_scene(Scene& new_scene) {
     scene = new_scene;
 }
 
 void init() {
+
+    // Reset the arcball
+    last_rotation = MyQuaternion::Identity();
+    current_rotation = MyQuaternion::Identity();
 
     // Gouraud shading
     glShadeModel(GL_SMOOTH);
@@ -56,7 +72,29 @@ void reshape(int width, int height) {
 
     glViewport(0, 0, width, height);
 
+    // Used for arcball stuff
+    mouse_scale_x = (float) (scene.camera.r - scene.camera.l) / (float) width;
+    mouse_scale_y = (float) (scene.camera.t - scene.camera.b) / (float) height;
+
     glutPostRedisplay();
+}
+
+Matrix4d get_current_matrix() {
+    MyQuaternion q = current_rotation * last_rotation;
+    q.normalize();
+    
+    double s = q.s;
+    double x = q.v.x();
+    double y = q.v.y();
+    double z = q.v.z();
+
+    Matrix4d R;
+    R << 1 - 2 * (y * y + z * z), 2 * (x * y - s * z), 2 * (x * z + s * y), 0,
+         2 * (x * y + s * z), 1 - 2 * (x * x + z * z), 2 * (y * z - s * x), 0,
+         2 * (x * z - s * y), 2 * (y * z + s * x), 1 - 2 * (x * x + y * y), 0,
+         0, 0, 0, 1;
+    
+    return R;
 }
 
 void display() {
@@ -64,6 +102,7 @@ void display() {
     
     glLoadIdentity();
 
+    // World to Camera Coordinates
     glRotatef(-scene.camera.rot_angle * 180.0f / M_PI,
               scene.camera.rot_axis(0),
               scene.camera.rot_axis(1),
@@ -71,6 +110,10 @@ void display() {
     glTranslatef(-scene.camera.position(0),
                  -scene.camera.position(1),
                  -scene.camera.position(2));
+
+    // Arcball stuff
+    Matrix4d R = get_current_matrix();
+    glMultMatrixd(R.data());
 
     // Set lights
     set_lights();
@@ -219,5 +262,56 @@ void create_objects_from_scene() {
         gl_shape.transforms = shape.transforms;
         
         opengl_shapes.push_back(gl_shape);
+    }
+}
+
+void mouse_pressed(int button, int state, int x, int y) {
+    /* If the left-mouse button was clicked down, then...
+     */
+    if(button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        /* Store the mouse position in our global variables.
+         */
+        start_mouse_x = x;
+        start_mouse_y = y;
+        
+        /* Since the mouse is being pressed down, we set our 'is_pressed"
+         * boolean indicator to true.
+         */
+        is_pressed = true;
+    }
+    /* If the left-mouse button was released up, then...
+     */
+    else if(button == GLUT_LEFT_BUTTON && state == GLUT_UP)
+    {
+        /* Mouse is no longer being pressed, so set our indicator to false.
+         */
+        is_pressed = false;
+        last_rotation = current_rotation * last_rotation;
+        std::cout << "Last rotation: " << last_rotation.s << " " << last_rotation.v.x() << " " << last_rotation.v.y() << " " << last_rotation.v.z() << std::endl;
+        Matrix4d R = get_current_matrix();
+        std::cout << R << std::endl;
+        current_rotation = MyQuaternion::Identity();
+    }
+}
+
+void mouse_moved(int x, int y) {
+    if(is_pressed) {
+        Vector3d start = map_to_sphere(start_mouse_x, start_mouse_y, scene.xres, scene.yres);
+        Vector3d curr = map_to_sphere(x, y, scene.xres, scene.yres);
+
+        Vector3d u = start.cross(curr);
+        if (u.norm() > 1e-6) {
+            u.normalize();
+
+            double angle = acos(std::min(1.0, start.dot(curr) / (start.norm() * curr.norm())));
+            
+            MyQuaternion q(cos(angle / 2), u * sin(angle / 2));
+            // q.normalize();
+
+            current_rotation = q;
+        }
+        
+        glutPostRedisplay();
     }
 }

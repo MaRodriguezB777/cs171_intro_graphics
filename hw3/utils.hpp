@@ -127,6 +127,7 @@ struct Scene {
     Matrix4f pers_matrix; // Camera to Normalized Device Coordinates
     std::vector<Shape> shapes;
     std::vector<Light> lights;
+    int xres, yres;
 
     Scene(Camera& camera, std::vector<Shape>& shapes, std::vector<Light>& lights);
     Scene() {}

@@ -130,13 +130,14 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " scene_description_file.txt xres yres" << std::endl;
     }
 
-    int xres = atoi(argv[2]);
-    int yres = atoi(argv[3]);
-
     // Part 1 [Complete]
     // Parse the scene file
     // Recreate the shaded surface renderer from hw2 within an OpenGL context
+    int xres = atoi(argv[2]);
+    int yres = atoi(argv[3]);
     Scene scene = read_scene_file(argv[1]);
+    scene.xres = xres;
+    scene.yres = yres;
     set_scene(scene);
 
     /* 'glutInit' intializes the GLUT (Graphics Library Utility Toolkit) library.
@@ -157,10 +158,13 @@ int main(int argc, char* argv[]) {
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
 
-    glutMainLoop();
-
     // Part 2
     // Add an Arcball implementation based on your own quaternion method
+    glutMouseFunc(mouse_pressed);
+    glutMotionFunc(mouse_moved);
+
+    glutMainLoop();
+
     
     return 0;
 }
