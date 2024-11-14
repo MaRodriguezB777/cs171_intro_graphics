@@ -163,6 +163,9 @@ int main(int argc, char* argv[]) {
     glutMouseFunc(mouse_pressed);
     glutMotionFunc(mouse_moved);
 
+    // Add keyboard to translate camera
+    glutKeyboardFunc(key_pressed);
+
     glutMainLoop();
 
     

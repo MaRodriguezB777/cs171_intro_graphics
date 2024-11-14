@@ -1,0 +1,11 @@
+This Makefile is for MAC OS ARM
+To run use the following command on the make directory:
+
+make && ./renderer [path/to/scene_description.txt] [xres] [yres]
+
+While running, you can press WASD to move around in the scene, press t to switch
+to wireframe mode, and q to quit.
+
+To use the arcball, click the left mouse button and move the model around.
+
+For testing, I attached one scene file, the data/scene_bunny1.txt file

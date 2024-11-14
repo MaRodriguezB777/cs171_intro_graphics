@@ -15,8 +15,7 @@ bool wireframe_mode = false;
 int start_mouse_x, start_mouse_y;
 float mouse_scale_x, mouse_scale_y;
 const float step_size = 0.2;
-const float x_view_step = 90.0, y_view_step = 90.0;
-float x_view_angle = 0, y_view_angle = 0;
+float x_view_angle = 0;
 bool is_pressed = false;
 
 MyQuaternion last_rotation, current_rotation;
@@ -102,6 +101,8 @@ void display() {
     
     glLoadIdentity();
 
+    glRotatef(x_view_angle, 0, 1, 0);
+
     // World to Camera Coordinates
     glRotatef(-scene.camera.rot_angle * 180.0f / M_PI,
               scene.camera.rot_axis(0),
@@ -111,12 +112,12 @@ void display() {
                  -scene.camera.position(1),
                  -scene.camera.position(2));
 
+    // Set lights
+    set_lights();
+
     // Arcball stuff
     Matrix4d R = get_current_matrix();
     glMultMatrixd(R.data());
-
-    // Set lights
-    set_lights();
 
     // Draw objects
     draw_objects();
@@ -288,9 +289,6 @@ void mouse_pressed(int button, int state, int x, int y) {
          */
         is_pressed = false;
         last_rotation = current_rotation * last_rotation;
-        std::cout << "Last rotation: " << last_rotation.s << " " << last_rotation.v.x() << " " << last_rotation.v.y() << " " << last_rotation.v.z() << std::endl;
-        Matrix4d R = get_current_matrix();
-        std::cout << R << std::endl;
         current_rotation = MyQuaternion::Identity();
     }
 }
@@ -313,5 +311,59 @@ void mouse_moved(int x, int y) {
         }
         
         glutPostRedisplay();
+    }
+}
+
+void key_pressed(unsigned char key, int x, int y) {
+    /* If 'q' is pressed, quit the program.
+     */
+    if(key == 'q')
+    {
+        exit(0);
+    }
+    /* If 't' is pressed, toggle our 'wireframe_mode' boolean to make OpenGL
+     * render our cubes as surfaces of wireframes.
+     */
+    else if(key == 't')
+    {
+        wireframe_mode = !wireframe_mode;
+        glutPostRedisplay();
+    }
+    else
+    {
+        float x_view_rad = x_view_angle * M_PI / 180.0;
+        
+        /* 'w' for step forward
+         */
+        if(key == 'w')
+        {
+            scene.camera.position[0] += step_size * sin(x_view_rad);
+            scene.camera.position[2] -= step_size * cos(x_view_rad);
+            glutPostRedisplay();
+        }
+        /* 'a' for step left
+         */
+        else if(key == 'a')
+        {
+            scene.camera.position[0] -= step_size * cos(x_view_rad);
+            scene.camera.position[2] -= step_size * sin(x_view_rad);
+            glutPostRedisplay();
+        }
+        /* 's' for step backward
+         */
+        else if(key == 's')
+        {
+            scene.camera.position[0] -= step_size * sin(x_view_rad);
+            scene.camera.position[2] += step_size * cos(x_view_rad);
+            glutPostRedisplay();
+        }
+        /* 'd' for step right
+         */
+        else if(key == 'd')
+        {
+            scene.camera.position[0] += step_size * cos(x_view_rad);
+            scene.camera.position[2] += step_size * sin(x_view_rad);
+            glutPostRedisplay();
+        }
     }
 }

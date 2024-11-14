@@ -315,6 +315,7 @@ Shape create_shape(std::string name, std::string filename, std::ifstream& file, 
                 float angle;
                 iss >> angle;
                 angle = angle * 180 / M_PI; // convert from radians to degrees
+                transform.rotation_angle = angle;
             } else if (type == "s") {
                 transform.type = TT_SCALE;
             }
@@ -347,6 +348,8 @@ void calc_lighting_model(
     Vector3f& n,
     std::vector<Light>& lights,
     Vector3f& cam_position) {
+        /* Takes in everything with world coordinates
+        */
         // n.normalize();
         if (PRINT_UTILS) {
             std::cout << n.transpose() << ", norm: " << n.norm() << ", diff: " << std::abs(n.norm() - 1.0) <<  ", bool: " << (std::abs(n.norm() - 1.0) < 1e-6) << std::endl;
