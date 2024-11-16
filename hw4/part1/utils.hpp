@@ -17,7 +17,6 @@ enum TransformType
     TT_SCALE
 };
 
-
 struct Face {
     int v1, v2, v3; // 0-indexed
     int n1, n2, n3; // 0-indexed
@@ -93,8 +92,8 @@ struct Object {
     std::vector<Vector4f> vertices; // 0-indexed
     std::vector<Vector3f> surface_normals; // not normalized
     std::vector<Face> faces;
-
-    Object(std::string name, std::string filename);
+    
+    Object(std::string name, std::string filename, std::string directory);
 };
 
 struct Camera {
@@ -141,7 +140,7 @@ void calc_scaling_matrix(Vector3f& v, Matrix4f& S);
 void draw_line(int x0, int y0, int x1, int y1, std::vector<std::vector<bool> >& img);
 void color_pixel(int x, int y, std::vector<std::vector<bool> >& img);
 Camera read_camera_section(std::ifstream& file);
-void read_objects_section(std::ifstream& file, std::unordered_map<std::string, Object>& objects);
+void read_objects_section(std::ifstream& file, std::unordered_map<std::string, Object>& objects, std::string directory);
 Shape create_shape(std::string name, std::string filename,std::ifstream& file, Object& obj);
 Vector4f transform_to_ndc(Matrix4f& space_matrix, Matrix4f& pers_matrix, Vector4f v);
 void calc_lighting_model(

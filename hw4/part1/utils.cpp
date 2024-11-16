@@ -66,9 +66,18 @@ Shape::Shape(
 Object struct Methods
 ############################
 */
-Object::Object(std::string name, std::string filename) : name(name), filename(filename) {
-        std::string file_path = "data/" + filename;
+
+/* 
+ * `directory` ends with a slash
+*/
+Object::Object(std::string name, std::string filename, std::string directory) : name(name), filename(filename) {
+        std::string file_path = directory + filename;
         std::ifstream file(file_path);
+
+        if (file.fail()) {
+            std::cerr << "Error opening file: " << file_path << std::endl;
+            exit(1);
+        }
         
         std::string line;
         while (std::getline(file, line)) {
@@ -82,7 +91,9 @@ Object::Object(std::string name, std::string filename) : name(name), filename(fi
             } else if (type == "vn") {
                 float x, y, z;
                 iss >> x >> y >> z;
-                surface_normals.push_back(Vector3f(x, y, z));
+                Vector3f normal(x, y, z);
+                normal.normalize();
+                surface_normals.push_back(normal);
             } else if (type == "f") {
                 std::vector<std::string> tokens;
                 std::string token;
@@ -205,13 +216,16 @@ Camera read_camera_section(std::ifstream& file) {
     return Camera(position, rot_axis, rot_angle, near, far, left, right, top, bottom);
 };
 
-void read_objects_section(std::ifstream& file, std::unordered_map<std::string, Object>& objects) {
+/* 
+ * `directory` ends with a slash
+*/
+void read_objects_section(std::ifstream& file, std::unordered_map<std::string, Object>& objects, std::string directory) {
     std::string line;
     while(std::getline(file, line) && !line.empty()) {
         std::istringstream iss(line);
         std::string obj_name, obj_filename;
         iss >> obj_name >> obj_filename;
-        objects.insert(std::make_pair(obj_name, Object(obj_name, obj_filename)));
+        objects.insert(std::make_pair(obj_name, Object(obj_name, obj_filename, directory)));
     }
 };
 

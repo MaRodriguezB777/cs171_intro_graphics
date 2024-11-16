@@ -395,14 +395,19 @@ void mouse_pressed(int button, int state, int x, int y) {
 
 void mouse_moved(int x, int y) {
     if(is_pressed) {
-        Vector3d start = map_to_sphere(start_mouse_x, start_mouse_y, scene.xres, scene.yres);
-        Vector3d curr = map_to_sphere(x, y, scene.xres, scene.yres);
+        int viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        int xres = viewport[2], yres = viewport[3];
+        Vector3d start = map_to_sphere(start_mouse_x, start_mouse_y, xres, yres);
+        Vector3d curr = map_to_sphere(x, y, xres, yres);
 
         Vector3d u = start.cross(curr);
         if (u.norm() > 1e-6) {
             u.normalize();
-
-            double angle = acos(std::min(1.0, start.dot(curr) / (start.norm() * curr.norm())));
+            
+            double dot = start.dot(curr);
+            dot = std::max(-1.0, std::min(1.0, dot));
+            double angle = acos(dot);
             
             MyQuaternion q(cos(angle / 2), u * sin(angle / 2));
             // q.normalize();
@@ -437,32 +442,28 @@ void key_pressed(unsigned char key, int x, int y) {
          */
         if(key == 'w')
         {
-            scene.camera.position[0] += step_size * sin(x_view_rad);
-            scene.camera.position[2] -= step_size * cos(x_view_rad);
+            scene.camera.position[2] -= step_size;
             glutPostRedisplay();
         }
         /* 'a' for step left
          */
         else if(key == 'a')
         {
-            scene.camera.position[0] -= step_size * cos(x_view_rad);
-            scene.camera.position[2] -= step_size * sin(x_view_rad);
+            scene.camera.position[0] -= step_size;
             glutPostRedisplay();
         }
         /* 's' for step backward
          */
         else if(key == 's')
         {
-            scene.camera.position[0] -= step_size * sin(x_view_rad);
-            scene.camera.position[2] += step_size * cos(x_view_rad);
+            scene.camera.position[2] += step_size;
             glutPostRedisplay();
         }
         /* 'd' for step right
          */
         else if(key == 'd')
         {
-            scene.camera.position[0] += step_size * cos(x_view_rad);
-            scene.camera.position[2] += step_size * sin(x_view_rad);
+            scene.camera.position[0] += step_size;
             glutPostRedisplay();
         }
     }

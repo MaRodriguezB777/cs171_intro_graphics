@@ -86,6 +86,12 @@ Scene read_scene_file(std::string filename) {
     std::vector<Light> lights;
 
     std::ifstream file(filename);
+    size_t found = filename.find_last_of("/");
+    std::string directory = filename.substr(0, found + 1);
+    if (file.fail()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        exit(1);
+    }
     std::string line;
     while(std::getline(file, line)) {
         if (line.empty()) {
@@ -108,7 +114,7 @@ Scene read_scene_file(std::string filename) {
             iss >> k;
             lights.push_back(Light(x, y, z, r, g, b, k));
         } else if (type == "objects:") {
-            read_objects_section(file, objects);
+            read_objects_section(file, objects, directory);
         } else if (objects.find(type) != objects.end()) {
             Object obj = objects.find(type)->second;
             shapes.push_back(create_shape(obj.name, obj.filename, file, objects.at(type)));

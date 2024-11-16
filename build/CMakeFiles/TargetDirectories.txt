@@ -1,0 +1,6 @@
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/edit_cache.dir
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/rebuild_cache.dir
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/list_install_components.dir
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/install.dir
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/install/local.dir
+/Users/rafwild8/Documents/school_work/cs171_intro_graphics/build/CMakeFiles/install/strip.dir

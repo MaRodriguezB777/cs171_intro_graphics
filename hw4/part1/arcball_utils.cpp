@@ -1,10 +1,13 @@
 #include "arcball_utils.hpp"
 
 MyQuaternion MyQuaternion::operator*(MyQuaternion& q) {
-    return MyQuaternion(
+    MyQuaternion result = MyQuaternion(
         s*q.s - v.dot(q.v),
         s*q.v + q.s*v + v.cross(q.v)
     );
+
+    result.normalize();
+    return result;
 }
 
 MyQuaternion MyQuaternion::Identity() {

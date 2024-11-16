@@ -1,0 +1,13 @@
+Separated part1 and part2 into two different programs
+
+To run part1:
+- Run the command `cd part1 && make all`
+- To use, run `./glslRenderer [path/to/scene_file.txt] [xres] [yres] [shading_type]`
+- - With `shading_type` = 0 using Gouraud shading, else using Phong shading
+
+To run part2:
+- Run the command `cd part2 && make all`
+- To use, run `./glslRenderer [path/to/colorMap.png] [path/to/normalMap.png]`
+
+Note that both of these programs were made on Apple Silicon so may have
+to adjust the Makefiles for other platforms
