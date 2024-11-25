@@ -112,12 +112,12 @@ void display() {
                  -scene.camera.position(1),
                  -scene.camera.position(2));
 
-    // Set lights
-    set_lights();
-
     // Arcball stuff
     Matrix4d R = get_current_matrix();
     glMultMatrixd(R.data());
+
+    // Set lights
+    set_lights();
 
     // Draw objects
     draw_objects();
@@ -295,8 +295,11 @@ void mouse_pressed(int button, int state, int x, int y) {
 
 void mouse_moved(int x, int y) {
     if(is_pressed) {
-        Vector3d start = map_to_sphere(start_mouse_x, start_mouse_y, scene.xres, scene.yres);
-        Vector3d curr = map_to_sphere(x, y, scene.xres, scene.yres);
+        int viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        int xres = viewport[2], yres = viewport[3];
+        Vector3d start = map_to_sphere(start_mouse_x, start_mouse_y, xres, yres);
+        Vector3d curr = map_to_sphere(x, y, xres, yres);
 
         Vector3d u = start.cross(curr);
         if (u.norm() > 1e-6) {

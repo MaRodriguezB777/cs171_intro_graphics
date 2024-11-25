@@ -1,0 +1,21 @@
+Implemented with optional shading. Also note that this was implemented for Apple
+Silicon Mac so may have to tweak for other platforms.
+
+To run, first do `make all`
+Then run `./geometry [path/to/scene.txt] [xres] [yres] [h] [shading_type]`
+with shading_type being an optional parameter to turn Phong shading on. Any
+value will work.
+
+For my implementation of F:
+To create F, we first start with the identity by setting diagonals to 1.
+We then set all the non diagonal entries to be the summation of the cotangents.
+
+To calculate the cotangents, we just create two vectors on the edges according
+to Figure 6 from the Lecture Notes. Taking the dot product, we can get the
+cosine and taking the cross product we can get the sine.
+
+For a vertex i and column j, where i != j, they sum to the first term of the
+summation but we have to still account for the j counts of the second term of
+the summation (the x_i term). We store it in the diagonal entry of the matrix by
+subtracting it. Also because this second term in the summation is negative, we
+subtract the sum.
