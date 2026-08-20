@@ -1,0 +1,16 @@
+To run the I-Bar code, first run `make all` inside of the `I_bar` directory and
+then just run `./keyframe [test_file.script]`. You can also press `f` at any
+time to print the current frame you are on to the console.
+
+To run the Bunny_Frames code, first run `make all` inside of the `Bunny_Frames`
+directory. Then run `mkdir -p my_interpolated_frames && ./keyframe`. This
+program will construct the interpolated frames into the `my_interpolated_frames`
+folder and then compare them with the expected ones provided in the
+`interpolated_frames` folder.
+
+I also had the floating point accuracy I used be 1.02e-6. I tried using doubles,
+doubles in specific operations (like divisions and matrix operations) combined
+with floats everywhere else, all floats, none of these approaches were able to
+get 1e-6 precision. Since the difference is so small, this makes me think that
+this may be a difference between Apple Silicon calculation and Linux/Windows or
+a difference in C++ versions.

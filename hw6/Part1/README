@@ -1,0 +1,6 @@
+For each first run `make all` and then run the commands as specified in the
+problem spec.
+
+Note that this program seems to run a bit slow despite me not changing almost
+any of the underlying code which makes me think it is a Apple Silicon Mac thing
+(which I am running all of this on)
